@@ -72,16 +72,12 @@
 <body>
 
 <header>
-    <!-- Dynamic Header with Date -->
     <h1>Driver Roster for <span id="currentDate"></span></h1>
-    <!-- Displaying the Imgur Image in Right Corner -->
     <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
 </header>
 
-<!-- Button to trigger Excel download -->
-<button class="download-btn" onclick="downloadExcel()">Download Everything as Excel</button>
+<button class="download-btn" onclick="downloadExcel()">Download</button>
 
-<!-- Main Roster Table -->
 <table id="rosterTable">
     <thead>
         <tr>
@@ -96,62 +92,8 @@
             <th>Confirm</th>
         </tr>
     </thead>
-    <tbody>
-        <tr class="active-row">
-            <td>30722</td>
-            <td><select id="rego1"></select></td> <!-- Populated dynamically -->
-            <td>
-                <select>
-                    <option value="S">S</option>
-                    <option value="SDL">SDL</option>
-                    <option value="RT">RT</option>
-                    <option value="BDBL">BDBL</option>
-                </select>
-            </td>
-            <td><input type="time" value="06:00" id="startTime1"></td>
-            <td><input type="time" value="16:00" id="finishTime1"></td>
-            <td><select id="service1"></select></td> <!-- Populated dynamically -->
-            <td><select id="driver1"></select></td> <!-- Populated dynamically -->
-            <td><input type="text"></td>
-            <td><button class="confirm-btn" onclick="confirmRow(1)">Confirm</button></td>
-        </tr>
-        <tr class="inactive-row">
-            <td>30723</td>
-            <td><select id="rego2"></select></td>
-            <td>
-                <select>
-                    <option value="S">S</option>
-                    <option value="SDL">SDL</option>
-                    <option value="RT">RT</option>
-                    <option value="BDBL">BDBL</option>
-                </select>
-            </td>
-            <td><input type="time" id="startTime2"></td>
-            <td><input type="time" id="finishTime2"></td>
-            <td><select id="service2"></select></td>
-            <td><select id="driver2"></select></td> <!-- Populated dynamically -->
-            <td><input type="text"></td>
-            <td><button class="confirm-btn" onclick="confirmRow(2)">Confirm</button></td>
-        </tr>
-        <tr class="inactive-row">
-            <td>30724</td>
-            <td><select id="rego3"></select></td>
-            <td>
-                <select>
-                    <option value="S">S</option>
-                    <option value="SDL">SDL</option>
-                    <option value="RT">RT</option>
-                    <option value="BDBL">BDBL</option>
-                </select>
-            </td>
-            <td><input type="time" id="startTime3"></td>
-            <td><input type="time" id="finishTime3"></td>
-            <td><select id="service3"></select></td>
-            <td><select id="driver3"></select></td> <!-- Populated dynamically -->
-            <td><input type="text"></td>
-            <td><button class="confirm-btn" onclick="confirmRow(3)">Confirm</button></td>
-        </tr>
-        <!-- Add more rows as needed -->
+    <tbody id="rosterTableBody">
+        <!-- Rows will be dynamically generated -->
     </tbody>
 </table>
 
@@ -248,9 +190,9 @@
 <button class="add-btn" onclick="addJob()">Add Job</button>
 
 <script>
+    const maxRows = 1000;
     let confirmedRowsCount = 0;
-    const maxConfirmedRows = 1000;
-
+    
     // Function to get current date based on Melbourne time
     function getMelbourneDate() {
         const now = new Date();
@@ -264,140 +206,113 @@
 
     // Function to populate dropdowns from driver, vehicles, and jobs tabs
     function populateDropDowns() {
-        var drivers = document.querySelectorAll('#driversTable tbody tr');
-        var vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
-        var jobs = document.querySelectorAll('#jobsTable tbody tr');
+        const drivers = document.querySelectorAll('#driversTable tbody tr');
+        const vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
+        const jobs = document.querySelectorAll('#jobsTable tbody tr');
 
-        [1, 2, 3].forEach(function(rowId) {
-            var driverSelect = document.getElementById(`driver${rowId}`);
-            var regoSelect = document.getElementById(`rego${rowId}`);
-            var serviceSelect = document.getElementById(`service${rowId}`);
+        for (let rowId = 1; rowId <= maxRows; rowId++) {
+            const driverSelect = document.getElementById(`driver${rowId}`);
+            const regoSelect = document.getElementById(`rego${rowId}`);
+            const serviceSelect = document.getElementById(`service${rowId}`);
 
             driverSelect.innerHTML = '';
             regoSelect.innerHTML = '';
             serviceSelect.innerHTML = '';
 
-            vehicles.forEach(function(row) {
-                var option = document.createElement('option');
+            vehicles.forEach(function (row) {
+                const option = document.createElement('option');
                 option.value = row.cells[0].textContent;
                 option.textContent = row.cells[0].textContent;
                 regoSelect.appendChild(option);
             });
 
-            drivers.forEach(function(row) {
-                var driverName = row.cells[0].textContent;
-                var onLeave = row.cells[1].querySelector('.onLeave').checked;
-                var hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
+            drivers.forEach(function (row) {
+                const driverName = row.cells[0].textContent;
+                const onLeave = row.cells[1].querySelector('.onLeave').checked;
+                const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
 
                 if (!onLeave) {
-                    var option = document.createElement('option');
+                    const option = document.createElement('option');
                     option.value = driverName;
                     option.textContent = driverName;
                     driverSelect.appendChild(option);
 
                     serviceSelect.innerHTML = '';
-                    jobs.forEach(function(jobRow) {
-                        var jobName = jobRow.cells[0].textContent;
-                        var isWharf = jobRow.cells[1].textContent === "Yes";
-                        
+                    jobs.forEach(function (jobRow) {
+                        const jobName = jobRow.cells[0].textContent;
+                        const isWharf = jobRow.cells[1].textContent === "Yes";
+
                         if (!hasMSIC && isWharf) {
                             return;
                         }
-                        
-                        var serviceOption = document.createElement('option');
+
+                        const serviceOption = document.createElement('option');
                         serviceOption.value = jobName;
                         serviceOption.textContent = jobName;
                         serviceSelect.appendChild(serviceOption);
                     });
                 }
             });
-        });
-    }
-
-    function addDriver() {
-        var newDriverName = document.getElementById("newDriverName").value;
-        if (newDriverName.trim() !== "") {
-            var driversTable = document.getElementById("driversTable").querySelector('tbody');
-            var newRow = driversTable.insertRow();
-
-            var nameCell = newRow.insertCell(0);
-            var leaveCell = newRow.insertCell(1);
-            var msicCell = newRow.insertCell(2);
-            var whiteCardCell = newRow.insertCell(3);
-
-            nameCell.textContent = newDriverName;
-            leaveCell.innerHTML = '<input type="checkbox" class="onLeave">';
-            msicCell.innerHTML = '<input type="checkbox" class="hasMSIC">';
-            whiteCardCell.innerHTML = '<input type="checkbox" class="hasWhiteCard">';
-
-            // Refresh the dropdowns after adding a new driver
-            populateDropDowns();
-            document.getElementById("newDriverName").value = "";
-
-            // Add event listeners to dynamically added checkboxes for "On Leave" and "MSIC"
-            addDynamicCheckboxListeners();
         }
     }
 
-    function addDynamicCheckboxListeners() {
-        document.querySelectorAll('.onLeave, .hasMSIC').forEach(function(checkbox) {
-            checkbox.addEventListener('change', populateDropDowns);
-        });
-    }
+    // Function to generate the rows dynamically up to 1000
+    function generateRows() {
+        const tableBody = document.getElementById('rosterTableBody');
 
-    // Initially populate the dropdowns, set the Melbourne date, and add event listeners
-    window.onload = function() {
+        for (let i = 1; i <= maxRows; i++) {
+            const row = document.createElement('tr');
+            row.className = i === 1 ? 'active-row' : 'inactive-row';
+            row.innerHTML = `
+                <td>3072${i}</td>
+                <td><select id="rego${i}"></select></td>
+                <td>
+                    <select>
+                        <option value="S">S</option>
+                        <option value="SDL">SDL</option>
+                        <option value="RT">RT</option>
+                        <option value="BDBL">BDBL</option>
+                    </select>
+                </td>
+                <td><input type="time" id="startTime${i}"></td>
+                <td><input type="time" id="finishTime${i}"></td>
+                <td><select id="service${i}"></select></td>
+                <td><select id="driver${i}"></select></td>
+                <td><input type="text"></td>
+                <td><button class="confirm-btn" onclick="confirmRow(${i})" ${i > 1 ? 'disabled' : ''}>Confirm</button></td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        // Populate dropdowns after generating the rows
         populateDropDowns();
-        addDynamicCheckboxListeners();
-        getMelbourneDate(); // Set the current date in the header
-    };
-
-    function addRego() {
-        var newRego = document.getElementById("newRego").value;
-        if (newRego.trim() !== "") {
-            var regoTable = document.getElementById("vehiclesTable").querySelector('tbody');
-            var newRow = regoTable.insertRow();
-            var newCell = newRow.insertCell(0);
-            newCell.textContent = newRego;
-            populateDropDowns();
-            document.getElementById("newRego").value = "";
-        }
-    }
-
-    function addJob() {
-        var newJob = document.getElementById("newJob").value;
-        var wharfStatus = document.getElementById("wharfStatus").value;
-        if (newJob.trim() !== "") {
-            var jobsTable = document.getElementById("jobsTable").querySelector('tbody');
-            var newRow = jobsTable.insertRow();
-            var jobCell = newRow.insertCell(0);
-            var wharfCell = newRow.insertCell(1);
-            jobCell.textContent = newJob;
-            wharfCell.textContent = wharfStatus; 
-            populateDropDowns();
-            document.getElementById("newJob").value = "";
-        }
     }
 
     function confirmRow(rowId) {
-        // Only allow up to 1000 rows to be confirmed
-        if (confirmedRowsCount < maxConfirmedRows) {
+        if (confirmedRowsCount < maxRows) {
             const currentRow = document.querySelector(`tbody tr:nth-child(${rowId})`);
             const nextRow = document.querySelector(`tbody tr:nth-child(${rowId + 1})`);
-            
-            // Gray out the current row (confirmed row)
+
             currentRow.classList.add('confirmed-row');
-            
-            // Show the next row by removing 'inactive-row'
+            currentRow.querySelector('.confirm-btn').disabled = true;
+
+            // Enable the next row if it exists
             if (nextRow) {
                 nextRow.classList.remove('inactive-row');
+                nextRow.querySelector('.confirm-btn').disabled = false;
             }
-            
+
             confirmedRowsCount++;
         } else {
             alert("Maximum of 1000 rows confirmed!");
         }
     }
+
+    // Initially generate the rows, populate dropdowns, and set the date
+    window.onload = function () {
+        generateRows();
+        getMelbourneDate(); // Set the current date in the header
+    };
 
     function downloadExcel() {
         var workbook = XLSX.utils.book_new();
@@ -431,9 +346,9 @@
     // Utility function to convert table to a 2D array
     function tableToArray(table) {
         var data = [];
-        table.querySelectorAll('tr').forEach(function(row) {
+        table.querySelectorAll('tr').forEach(function (row) {
             var rowData = [];
-            row.querySelectorAll('th, td').forEach(function(cell) {
+            row.querySelectorAll('th, td').forEach(function (cell) {
                 if (cell.querySelector('input') || cell.querySelector('select')) {
                     rowData.push(cell.querySelector('input, select').value || cell.textContent);
                 } else {
