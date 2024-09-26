@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Roster with Dynamic Inputs and Excel Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script> <!-- SheetJS Library -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .logo {
+            width: 200px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input, select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .download-btn, .add-btn {
+            margin: 20px 0;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .confirm-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .confirm-btn:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+        .highlight {
+            background-color: red;
+            color: white;
+        }
+        .inactive-row {
+            display: none;
+        }
+        .confirmed-row {
+            background-color: #f0f0f0;
+            pointer-events: none; /* Disable any input */
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <!-- Dynamic Header with Date -->
+    <h1>Driver Roster for <span id="currentDate"></span></h1>
+    <!-- Displaying the Imgur Image in Right Corner -->
+    <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
+</header>
+
+<!-- Button to trigger Excel download -->
+<button class="download-btn" onclick="downloadExcel()">Download Everything as Excel</button>
+
+<!-- Main Roster Table -->
+<table id="rosterTable">
+    <thead>
+        <tr>
+            <th>GEK #</th>
+            <th>REGO</th>
+            <th>TYPE</th>
+            <th>Start Time</th>
+            <th>Finish Time</th>
+            <th>Service</th>
+            <th>Driver</th>
+            <th>Notes</th>
+            <th>Confirm</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="active-row">
+            <td>30722</td>
+            <td><select id="rego1"></select></td> <!-- Populated dynamically -->
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="time" value="06:00" id="startTime1"></td>
+            <td><input type="time" value="16:00" id="finishTime1"></td>
+            <td><select id="service1"></select></td> <!-- Populated dynamically -->
+            <td><select id="driver1"></select></td> <!-- Populated dynamically -->
+            <td><input type="text"></td>
+            <td><button class="confirm-btn" onclick="confirmRow(1)">Confirm</button></td>
+        </tr>
+        <tr class="inactive-row">
+            <td>30723</td>
+            <td><select id="rego2"></select></td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="time" id="startTime2"></td>
+            <td><input type="time" id="finishTime2"></td>
+            <td><select id="service2"></select></td>
+            <td><select id="driver2"></select></td> <!-- Populated dynamically -->
+            <td><input type="text"></td>
+            <td><button class="confirm-btn" onclick="confirmRow(2)">Confirm</button></td>
+        </tr>
+        <tr class="inactive-row">
+            <td>30724</td>
+            <td><select id="rego3"></select></td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="time" id="startTime3"></td>
+            <td><input type="time" id="finishTime3"></td>
+            <td><select id="service3"></select></td>
+            <td><select id="driver3"></select></td> <!-- Populated dynamically -->
+            <td><input type="text"></td>
+            <td><button class="confirm-btn" onclick="confirmRow(3)">Confirm</button></td>
+        </tr>
+        <!-- Add more rows as needed -->
+    </tbody>
+</table>
+
+<!-- Drivers Tab -->
+<h2>Drivers List</h2>
+<table id="driversTable">
+    <thead>
+        <tr>
+            <th>Driver Name</th>
+            <th>On Leave</th>
+            <th>Has MSIC</th>
+            <th>Has White Card</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>(HC) Dean Piggot</td>
+            <td><input type="checkbox" class="onLeave"></td>
+            <td><input type="checkbox" class="hasMSIC" checked></td>
+            <td><input type="checkbox" class="hasWhiteCard"></td>
+        </tr>
+        <tr>
+            <td>(MC) Jagdip Singh</td>
+            <td><input type="checkbox" class="onLeave"></td>
+            <td><input type="checkbox" class="hasMSIC"></td>
+            <td><input type="checkbox" class="hasWhiteCard"></td>
+        </tr>
+        <!-- Add more drivers -->
+    </tbody>
+</table>
+
+<!-- Add New Driver -->
+<input type="text" id="newDriverName" placeholder="Add New Driver Name">
+<button class="add-btn" onclick="addDriver()">Add Driver</button>
+
+<!-- Vehicles Tab -->
+<h2>Vehicles List</h2>
+<table id="vehiclesTable">
+    <thead>
+        <tr>
+            <th>REGO</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>XW06PI</td>
+        </tr>
+        <tr>
+            <td>XW48PI</td>
+        </tr>
+        <!-- Add more vehicles -->
+    </tbody>
+</table>
+
+<!-- Add New Rego -->
+<input type="text" id="newRego" placeholder="Add New Rego">
+<button class="add-btn" onclick="addRego()">Add Rego</button>
+
+<!-- Jobs Tab -->
+<h2>Jobs List</h2>
+<table id="jobsTable">
+    <thead>
+        <tr>
+            <th>Client Name</th>
+            <th>Wharf Location (Restricted)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Sunrice</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Agripak</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>CHS BB</td>
+            <td>No</td>
+        </tr>
+        <tr>
+            <td>Wharf</td>
+            <td>Yes</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Add New Job -->
+<input type="text" id="newJob" placeholder="Add New Job">
+<select id="wharfStatus">
+    <option value="No">No</option>
+    <option value="Yes">Yes</option>
+</select>
+<button class="add-btn" onclick="addJob()">Add Job</button>
+
+<script>
+    let confirmedRowsCount = 0;
+    const maxConfirmedRows = 1000;
+
+    // Function to get current date based on Melbourne time
+    function getMelbourneDate() {
+        const now = new Date();
+        const melbourneTime = now.toLocaleString('en-AU', {
+            timeZone: 'Australia/Melbourne',
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        document.getElementById("currentDate").innerText = melbourneTime;
+        return now.toLocaleDateString('en-AU', { timeZone: 'Australia/Melbourne' });
+    }
+
+    // Function to populate dropdowns from driver, vehicles, and jobs tabs
+    function populateDropDowns() {
+        var drivers = document.querySelectorAll('#driversTable tbody tr');
+        var vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
+        var jobs = document.querySelectorAll('#jobsTable tbody tr');
+
+        [1, 2, 3].forEach(function(rowId) {
+            var driverSelect = document.getElementById(`driver${rowId}`);
+            var regoSelect = document.getElementById(`rego${rowId}`);
+            var serviceSelect = document.getElementById(`service${rowId}`);
+
+            driverSelect.innerHTML = '';
+            regoSelect.innerHTML = '';
+            serviceSelect.innerHTML = '';
+
+            vehicles.forEach(function(row) {
+                var option = document.createElement('option');
+                option.value = row.cells[0].textContent;
+                option.textContent = row.cells[0].textContent;
+                regoSelect.appendChild(option);
+            });
+
+            drivers.forEach(function(row) {
+                var driverName = row.cells[0].textContent;
+                var onLeave = row.cells[1].querySelector('.onLeave').checked;
+                var hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
+
+                if (!onLeave) {
+                    var option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+
+                    serviceSelect.innerHTML = '';
+                    jobs.forEach(function(jobRow) {
+                        var jobName = jobRow.cells[0].textContent;
+                        var isWharf = jobRow.cells[1].textContent === "Yes";
+                        
+                        if (!hasMSIC && isWharf) {
+                            return;
+                        }
+                        
+                        var serviceOption = document.createElement('option');
+                        serviceOption.value = jobName;
+                        serviceOption.textContent = jobName;
+                        serviceSelect.appendChild(serviceOption);
+                    });
+                }
+            });
+        });
+    }
+
+    function addDriver() {
+        var newDriverName = document.getElementById("newDriverName").value;
+        if (newDriverName.trim() !== "") {
+            var driversTable = document.getElementById("driversTable").querySelector('tbody');
+            var newRow = driversTable.insertRow();
+
+            var nameCell = newRow.insertCell(0);
+            var leaveCell = newRow.insertCell(1);
+            var msicCell = newRow.insertCell(2);
+            var whiteCardCell = newRow.insertCell(3);
+
+            nameCell.textContent = newDriverName;
+            leaveCell.innerHTML = '<input type="checkbox" class="onLeave">';
+            msicCell.innerHTML = '<input type="checkbox" class="hasMSIC">';
+            whiteCardCell.innerHTML = '<input type="checkbox" class="hasWhiteCard">';
+
+            // Refresh the dropdowns after adding a new driver
+            populateDropDowns();
+            document.getElementById("newDriverName").value = "";
+
+            // Add event listeners to dynamically added checkboxes for "On Leave" and "MSIC"
+            addDynamicCheckboxListeners();
+        }
+    }
+
+    function addDynamicCheckboxListeners() {
+        document.querySelectorAll('.onLeave, .hasMSIC').forEach(function(checkbox) {
+            checkbox.addEventListener('change', populateDropDowns);
+        });
+    }
+
+    // Initially populate the dropdowns, set the Melbourne date, and add event listeners
+    window.onload = function() {
+        populateDropDowns();
+        addDynamicCheckboxListeners();
+        getMelbourneDate(); // Set the current date in the header
+    };
+
+    function addRego() {
+        var newRego = document.getElementById("newRego").value;
+        if (newRego.trim() !== "") {
+            var regoTable = document.getElementById("vehiclesTable").querySelector('tbody');
+            var newRow = regoTable.insertRow();
+            var newCell = newRow.insertCell(0);
+            newCell.textContent = newRego;
+            populateDropDowns();
+            document.getElementById("newRego").value = "";
+        }
+    }
+
+    function addJob() {
+        var newJob = document.getElementById("newJob").value;
+        var wharfStatus = document.getElementById("wharfStatus").value;
+        if (newJob.trim() !== "") {
+            var jobsTable = document.getElementById("jobsTable").querySelector('tbody');
+            var newRow = jobsTable.insertRow();
+            var jobCell = newRow.insertCell(0);
+            var wharfCell = newRow.insertCell(1);
+            jobCell.textContent = newJob;
+            wharfCell.textContent = wharfStatus; 
+            populateDropDowns();
+            document.getElementById("newJob").value = "";
+        }
+    }
+
+    function confirmRow(rowId) {
+        // Only allow up to 1000 rows to be confirmed
+        if (confirmedRowsCount < maxConfirmedRows) {
+            const currentRow = document.querySelector(`tbody tr:nth-child(${rowId})`);
+            const nextRow = document.querySelector(`tbody tr:nth-child(${rowId + 1})`);
+            
+            // Gray out the current row (confirmed row)
+            currentRow.classList.add('confirmed-row');
+            
+            // Show the next row by removing 'inactive-row'
+            if (nextRow) {
+                nextRow.classList.remove('inactive-row');
+            }
+            
+            confirmedRowsCount++;
+        } else {
+            alert("Maximum of 1000 rows confirmed!");
+        }
+    }
+
+    function downloadExcel() {
+        var workbook = XLSX.utils.book_new();
+
+        // Collect data from the roster table, drivers table, vehicles table, and jobs table
+        var rosterData = tableToArray(document.getElementById('rosterTable'));
+        var driversData = tableToArray(document.getElementById('driversTable'));
+        var vehiclesData = tableToArray(document.getElementById('vehiclesTable'));
+        var jobsData = tableToArray(document.getElementById('jobsTable'));
+
+        // Create worksheets for each section
+        var rosterSheet = XLSX.utils.aoa_to_sheet(rosterData);
+        var driversSheet = XLSX.utils.aoa_to_sheet(driversData);
+        var vehiclesSheet = XLSX.utils.aoa_to_sheet(vehiclesData);
+        var jobsSheet = XLSX.utils.aoa_to_sheet(jobsData);
+
+        // Add worksheets to workbook
+        XLSX.utils.book_append_sheet(workbook, rosterSheet, 'Roster');
+        XLSX.utils.book_append_sheet(workbook, driversSheet, 'Drivers');
+        XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehicles');
+        XLSX.utils.book_append_sheet(workbook, jobsSheet, 'Jobs');
+
+        // Get dynamic file name from the date in the header
+        const dateString = getMelbourneDate().replace(/\//g, '_');
+        const fileName = `Driver_Roster_for_${dateString}.xlsx`;
+
+        // Download the workbook with the dynamic name
+        XLSX.writeFile(workbook, fileName);
+    }
+
+    // Utility function to convert table to a 2D array
+    function tableToArray(table) {
+        var data = [];
+        table.querySelectorAll('tr').forEach(function(row) {
+            var rowData = [];
+            row.querySelectorAll('th, td').forEach(function(cell) {
+                if (cell.querySelector('input') || cell.querySelector('select')) {
+                    rowData.push(cell.querySelector('input, select').value || cell.textContent);
+                } else {
+                    rowData.push(cell.textContent);
+                }
+            });
+            data.push(rowData);
+        });
+        return data;
+    }
+</script>
+
+</body>
+</html>
