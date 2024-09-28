@@ -73,7 +73,7 @@
     <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
 </header>
 
-<button class="download-btn" onclick="downloadExcel()">Download</button>
+<button class="download-btn" onclick="downloadExcel()">Download Everything as Excel</button>
 
 <!-- Main Roster Table -->
 <table id="rosterTable">
@@ -85,9 +85,9 @@
             <th>Start Time</th>
             <th>Finish Time</th>
             <th>Service</th>
+            <th>Wharf</th> <!-- Moved Wharf column here -->
             <th>Driver</th>
             <th>Notes</th>
-            <th>Confirm</th>
         </tr>
     </thead>
     <tbody id="rosterTableBody">
@@ -117,7 +117,7 @@
         <tr>
             <td>(MC) Jagdip Singh</td>
             <td><input type="checkbox" class="onLeave" onchange="populateDropDowns(currentRow)"></td>
-            <td><input type="checkbox" class="hasMSIC" onchange="populateDropDowns(currentRow)"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="populateDropDowns(currentRow)"></td>
             <td><input type="checkbox" class="hasWhiteCard"></td>
         </tr>
         <!-- Add more drivers -->
@@ -157,7 +157,6 @@
     <thead>
         <tr>
             <th>Client Name</th>
-            <th>Wharf Location (Restricted)</th>
             <th>Trailer Type</th>
             <th>Confirm</th>
         </tr>
@@ -165,7 +164,6 @@
     <tbody>
         <tr>
             <td>Sunrice</td>
-            <td>No</td>
             <td>
                 <select>
                     <option value="S">S</option>
@@ -178,7 +176,6 @@
         </tr>
         <tr>
             <td>Agripak</td>
-            <td>No</td>
             <td>
                 <select>
                     <option value="S">S</option>
@@ -191,7 +188,6 @@
         </tr>
         <tr>
             <td>CHS BB</td>
-            <td>No</td>
             <td>
                 <select>
                     <option value="S">S</option>
@@ -203,8 +199,7 @@
             <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
         </tr>
         <tr>
-            <td>Wharf</td>
-            <td>Yes</td>
+            <td>DPW</td>
             <td>
                 <select>
                     <option value="S">S</option>
@@ -252,7 +247,13 @@
         <td><input type="time" id="finishTime${rowId}"></td>
         <td><select id="service${rowId}"></select> <!-- This is the Client Name (Service) dropdown -->
         </td>
-        <td><select id="driver${rowId}"></select></td>
+        <td>
+            <select id="wharfLocation${rowId}">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option> <!-- Wharf Location (Restricted) field -->
+            </select>
+        </td>
+        <td><select id="driver${rowId}"></select></td> <!-- Driver column moved after Wharf -->
         <td><input type="text"></td>
         <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
     `;
@@ -263,38 +264,72 @@
 
 function confirmJob(button) {
     const row = button.closest('tr'); // Get the row from the jobs list
-    const clientName = row.cells[0].textContent; // Get the client name from the jobs list
-    const selectedTrailerType = row.cells[2].querySelector('select').value; // Get the selected trailer type from the jobs list
-
-    // Add the confirmed job to the confirmedJobs array
-    confirmedJobs.push({
-        jobName: clientName,
-        trailerType: selectedTrailerType
-    });
+    const clientName = row.cells[0].textContent; // Get the client name
+    const selectedTrailerType = row.cells[1].querySelector('select').value; // Get the trailer type
 
     // Get the current row in the roster table
-    const tableBody = document.getElementById('rosterTableBody');
-    const currentTableRow = tableBody.querySelector(`tr:nth-child(${currentRow})`); // Get the current row by its position in the table
+    const currentTableRow = document.querySelector(`#rosterTableBody tr:nth-child(${currentRow})`);
 
     // Update the Client Name (Service column) and Trailer Type in the current row
-    const clientCell = currentTableRow.querySelector(`#service${currentRow}`); // Service (Client Name) column
-    const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`); // Trailer Type column
+    const clientCell = currentTableRow.querySelector(`#service${currentRow}`);
+    const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`);
 
-    // Update the Client Name (Service) and Trailer Type in the main roster table
-    clientCell.innerHTML = `<option>${clientName}</option>`; // Set the client name (service)
-    trailerTypeSelect.innerHTML = ''; // Clear previous options in Trailer Type
+    // Update the Client Name and Trailer Type in the main roster table
+    clientCell.innerHTML = `<option>${clientName}</option>`;
+    trailerTypeSelect.innerHTML = ''; // Clear previous options
     const trailerTypeOption = document.createElement('option');
     trailerTypeOption.value = selectedTrailerType;
     trailerTypeOption.textContent = selectedTrailerType;
-    trailerTypeSelect.appendChild(trailerTypeOption); // Add the selected trailer type
+    trailerTypeSelect.appendChild(trailerTypeOption);
+
+    // Populate the driver dropdown for this row (no wharf restriction now)
+    populateDriverDropdown(currentRow, false); // Set wharfRestricted to false since the column is removed
 
     // Disable the confirm button and dropdown in the jobs list to prevent re-confirmation
     button.disabled = true;
-    row.cells[2].querySelector('select').disabled = true;
-
-    // You can add new rows or other operations as needed here
+    row.cells[1].querySelector('select').disabled = true;
 }
 
+
+function populateDriverDropdown(rowId, wharfRestricted) {
+    const drivers = document.querySelectorAll('#driversTable tbody tr'); // Get all drivers from the drivers table
+    const driverSelect = document.getElementById(`driver${rowId}`); // Driver dropdown in the roster table
+    driverSelect.innerHTML = ''; // Clear current options
+
+    // Loop through all drivers in the drivers table
+    drivers.forEach(function(row) {
+        const driverName = row.cells[0].textContent; // Driver name
+        const onLeave = row.cells[1].querySelector('.onLeave').checked; // Is the driver on leave?
+        const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked; // Does the driver have MSIC?
+
+        // For wharf-restricted jobs, only show drivers with MSIC and who are not on leave
+        if (wharfRestricted) {
+            if (!onLeave && hasMSIC) {
+                // Add the driver to the dropdown if they have MSIC and are not on leave
+                const option = document.createElement('option');
+                option.value = driverName;
+                option.textContent = driverName;
+                driverSelect.appendChild(option);
+            }
+        } else {
+            // For non-wharf jobs, show all drivers who are not on leave (MSIC doesn't matter)
+            if (!onLeave) {
+                const option = document.createElement('option');
+                option.value = driverName;
+                option.textContent = driverName;
+                driverSelect.appendChild(option);
+            }
+        }
+    });
+
+    // If no drivers are available for the wharf-restricted job, display a message
+    if (wharfRestricted && driverSelect.length === 0) {
+        const noDriverOption = document.createElement('option');
+        noDriverOption.value = '';
+        noDriverOption.textContent = 'No drivers with MSIC available';
+        driverSelect.appendChild(noDriverOption);
+    }
+}
 
 
 function populateDropDowns(rowId) {
@@ -302,13 +337,11 @@ function populateDropDowns(rowId) {
     const vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
     const driverSelect = document.getElementById(`driver${rowId}`);
     const regoSelect = document.getElementById(`rego${rowId}`);
-    const serviceSelect = document.getElementById(`service${rowId}`); // Service (Client Name)
-    const trailerTypeSelect = document.getElementById(`type${rowId}`); // Trailer Type
+    const wharfLocationSelect = document.getElementById(`wharfLocation${rowId}`); // Wharf Location (Restricted)
+    const wharfRestricted = wharfLocationSelect.value === "Yes"; // Check if wharf location is restricted
 
-    driverSelect.innerHTML = '';
-    regoSelect.innerHTML = '';
-    serviceSelect.innerHTML = '';
-    trailerTypeSelect.innerHTML = '';
+    regoSelect.innerHTML = ''; // Clear vehicle options
+    driverSelect.innerHTML = ''; // Clear driver options
 
     // Populate vehicles dropdown
     vehicles.forEach(function (row) {
@@ -322,15 +355,28 @@ function populateDropDowns(rowId) {
     drivers.forEach(function (row) {
         const driverName = row.cells[0].textContent;
         const onLeave = row.cells[1].querySelector('.onLeave').checked;
+        const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
 
         if (!onLeave) {
-            const option = document.createElement('option');
-            option.value = driverName;
-            option.textContent = driverName;
-            driverSelect.appendChild(option);
+            if (wharfRestricted) {
+                // Show only drivers with MSIC for restricted wharf jobs
+                if (hasMSIC) {
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
+            } else {
+                // For non-wharf jobs, add all drivers who are not on leave
+                const option = document.createElement('option');
+                option.value = driverName;
+                option.textContent = driverName;
+                driverSelect.appendChild(option);
+            }
         }
     });
 }
+
 
 
 
