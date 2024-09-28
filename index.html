@@ -37,14 +37,21 @@
             padding: 5px;
             box-sizing: border-box;
         }
+
+        /* Navy blue button style */
         .download-btn, .add-btn {
             margin: 20px 0;
             padding: 10px 15px;
-            background-color: #28a745;
-            color: white;
+            background-color: rgb(6, 6, 201); /* Navy blue background */
+            color: white;font-weight: bold;
             border: none;
             cursor: pointer;
         }
+
+        .download-btn:hover, .add-btn:hover {
+            background-color: #000080; /* Darker navy blue on hover */
+        }
+
         .confirm-btn {
             background-color: #007bff;
             color: white;
@@ -68,13 +75,13 @@
 </head>
 <body>
 
+
 <header>
     <h1>Driver Roster for <span id="currentDate"></span></h1>
     <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
 </header>
 
 <button class="download-btn" onclick="downloadExcel()">Download</button>
-
 <!-- Main Roster Table -->
 <table id="rosterTable">
     <thead>
@@ -85,9 +92,9 @@
             <th>Start Time</th>
             <th>Finish Time</th>
             <th>Service</th>
-            <th>Wharf</th> <!-- Moved Wharf column here -->
+            <th>Wharf Status</th> <!-- Moved Wharf Status next to Service -->
             <th>Driver</th>
-            <th>Notes</th>
+            <th>Confirm</th>
         </tr>
     </thead>
     <tbody id="rosterTableBody">
@@ -213,6 +220,7 @@
     </tbody>
 </table>
 
+
 <!-- Add New Job -->
 <input type="text" id="newJob" placeholder="Add New Job">
 <button class="add-btn" onclick="addJob()">Add Job</button>
@@ -231,7 +239,6 @@
         });
         document.getElementById("currentDate").innerText = melbourneTime;
     }
-
     function addRow() {
     const tableBody = document.getElementById('rosterTableBody');
     const rowId = currentRow; // Use the current row for unique IDs
@@ -248,17 +255,29 @@
         <td><select id="service${rowId}"></select> <!-- This is the Client Name (Service) dropdown -->
         </td>
         <td>
-            <select id="wharfLocation${rowId}">
+            <select id="wharfLocation${rowId}" onchange="updateDriverList(${rowId})">
                 <option value="No">No</option>
-                <option value="Yes">Yes</option> <!-- Wharf Location (Restricted) field -->
+                <option value="Yes">Yes</option> <!-- Wharf Status -->
             </select>
         </td>
-        <td><select id="driver${rowId}"></select></td> <!-- Driver column moved after Wharf -->
-        <td><input type="text"></td>
+        <td><select id="driver${rowId}"></select></td>
         <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
     `;
     tableBody.appendChild(row);
     populateDropDowns(rowId);  // Populate dropdowns for this new row
+}
+
+
+function updateDriverList(rowId) {
+    const wharfStatus = document.getElementById(`wharfLocation${rowId}`).value;
+    
+    if (wharfStatus === "Yes") {
+        // If Wharf Status is Yes, show only drivers with MSIC and who are not on leave
+        populateDriverDropdown(rowId, true);
+    } else {
+        // If Wharf Status is No, show all drivers who are not on leave
+        populateDriverDropdown(rowId, false);
+    }
 }
 
 
@@ -269,7 +288,7 @@ function confirmJob(button) {
 
     // Get the current row in the roster table
     const currentTableRow = document.querySelector(`#rosterTableBody tr:nth-child(${currentRow})`);
-
+    
     // Update the Client Name (Service column) and Trailer Type in the current row
     const clientCell = currentTableRow.querySelector(`#service${currentRow}`);
     const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`);
@@ -282,16 +301,11 @@ function confirmJob(button) {
     trailerTypeOption.textContent = selectedTrailerType;
     trailerTypeSelect.appendChild(trailerTypeOption);
 
-    // Populate the driver dropdown for this row (no wharf restriction now)
-    populateDriverDropdown(currentRow, false); // Set wharfRestricted to false since the column is removed
-
     // Disable the confirm button and dropdown in the jobs list to prevent re-confirmation
     button.disabled = true;
     row.cells[1].querySelector('select').disabled = true;
 }
-
-
-function populateDriverDropdown(rowId, wharfRestricted) {
+function populateDriverDropdown(rowId, wharfStatusIsYes) {
     const drivers = document.querySelectorAll('#driversTable tbody tr'); // Get all drivers from the drivers table
     const driverSelect = document.getElementById(`driver${rowId}`); // Driver dropdown in the roster table
     driverSelect.innerHTML = ''; // Clear current options
@@ -302,18 +316,17 @@ function populateDriverDropdown(rowId, wharfRestricted) {
         const onLeave = row.cells[1].querySelector('.onLeave').checked; // Is the driver on leave?
         const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked; // Does the driver have MSIC?
 
-        // For wharf-restricted jobs, only show drivers with MSIC and who are not on leave
-        if (wharfRestricted) {
-            if (!onLeave && hasMSIC) {
-                // Add the driver to the dropdown if they have MSIC and are not on leave
-                const option = document.createElement('option');
-                option.value = driverName;
-                option.textContent = driverName;
-                driverSelect.appendChild(option);
-            }
-        } else {
-            // For non-wharf jobs, show all drivers who are not on leave (MSIC doesn't matter)
-            if (!onLeave) {
+        if (!onLeave) {
+            if (wharfStatusIsYes) {
+                // Show only drivers with MSIC if Wharf Status is Yes
+                if (hasMSIC) {
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
+            } else {
+                // Show all drivers who are not on leave if Wharf Status is No
                 const option = document.createElement('option');
                 option.value = driverName;
                 option.textContent = driverName;
@@ -322,8 +335,8 @@ function populateDriverDropdown(rowId, wharfRestricted) {
         }
     });
 
-    // If no drivers are available for the wharf-restricted job, display a message
-    if (wharfRestricted && driverSelect.length === 0) {
+    // If Wharf Status is Yes and no drivers are available with MSIC, show a message
+    if (wharfStatusIsYes && driverSelect.length === 0) {
         const noDriverOption = document.createElement('option');
         noDriverOption.value = '';
         noDriverOption.textContent = 'No drivers with MSIC available';
@@ -448,11 +461,10 @@ function confirmRow(rowId) {
             <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
         `;
 
-        // Clear input and refresh dropdowns
+        // Clear input field after adding the job
         document.getElementById('newJob').value = '';
     }
 }
-
 
     // Function to download the entire roster to an Excel file
     function downloadExcel() {
