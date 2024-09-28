@@ -431,28 +431,28 @@ function confirmRow(rowId) {
 
     // Function to add a new job dynamically
     function addJob() {
-        const newJob = document.getElementById('newJob').value.trim();
-        if (newJob !== "") {
-            const jobsTable = document.getElementById('jobsTable').querySelector('tbody');
-            const newRow = jobsTable.insertRow();
-            newRow.innerHTML = `
-                <td>${newJob}</td>
-                <td>No</td>
-                <td>
-                    <select>
-                        <option value="S">S</option>
-                        <option value="SDL">SDL</option>
-                        <option value="RT">RT</option>
-                        <option value="BDBL">BDBL</option>
-                    </select>
-                </td>
-                <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
-            `;
+    const newJob = document.getElementById('newJob').value.trim();
+    if (newJob !== "") {
+        const jobsTable = document.getElementById('jobsTable').querySelector('tbody');
+        const newRow = jobsTable.insertRow();
+        newRow.innerHTML = `
+            <td>${newJob}</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        `;
 
-            // Clear input and refresh dropdowns
-            document.getElementById('newJob').value = '';
-        }
+        // Clear input and refresh dropdowns
+        document.getElementById('newJob').value = '';
     }
+}
+
 
     // Function to download the entire roster to an Excel file
     function downloadExcel() {
