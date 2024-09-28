@@ -81,7 +81,7 @@
         <tr>
             <th>GEK #</th>
             <th>REGO</th>
-            <th>TYPE</th>
+            <th>Trailer Type</th> <!-- Changed Type to Trailer Type -->
             <th>Start Time</th>
             <th>Finish Time</th>
             <th>Service</th>
@@ -94,6 +94,7 @@
         <!-- Initial row will be generated here -->
     </tbody>
 </table>
+
 
 <!-- Drivers Tab -->
 <h2>Drivers List</h2>
@@ -157,7 +158,7 @@
         <tr>
             <th>Client Name</th>
             <th>Wharf Location (Restricted)</th>
-            <th>Type</th>
+            <th>Trailer Type</th>
             <th>Confirm</th>
         </tr>
     </thead>
@@ -236,116 +237,117 @@
         document.getElementById("currentDate").innerText = melbourneTime;
     }
 
-    // Function to dynamically add a new row after confirming the previous row
     function addRow() {
-        const tableBody = document.getElementById('rosterTableBody');
-        const rowId = currentRow;
+    const tableBody = document.getElementById('rosterTableBody');
+    const rowId = currentRow; // Use the current row for unique IDs
 
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>3072${rowId}</td>
-            <td><select id="rego${rowId}"></select></td>
-            <td>
-                <select id="type${rowId}"></select>
-            </td>
-            <td><input type="time" id="startTime${rowId}"></td>
-            <td><input type="time" id="finishTime${rowId}"></td>
-            <td><select id="service${rowId}"></select></td>
-            <td><select id="driver${rowId}"></select></td>
-            <td><input type="text"></td>
-            <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
-        `;
-        tableBody.appendChild(row);
-        populateDropDowns(rowId);
-    }
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>3072${rowId}</td>
+        <td><select id="rego${rowId}"></select></td>
+        <td>
+            <select id="type${rowId}"></select> <!-- This is the Trailer Type dropdown -->
+        </td>
+        <td><input type="time" id="startTime${rowId}"></td>
+        <td><input type="time" id="finishTime${rowId}"></td>
+        <td><select id="service${rowId}"></select> <!-- This is the Client Name (Service) dropdown -->
+        </td>
+        <td><select id="driver${rowId}"></select></td>
+        <td><input type="text"></td>
+        <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
+    `;
+    tableBody.appendChild(row);
+    populateDropDowns(rowId);  // Populate dropdowns for this new row
+}
 
-    // Function to confirm a job from the jobs list and move it to the roster table
-    function confirmJob(button) {
-        const row = button.closest('tr');
-        const clientName = row.cells[0].textContent;
-        const selectedType = row.cells[2].querySelector('select').value;
 
-        // Add the confirmed job to the confirmedJobs array
-        confirmedJobs.push({
-            jobName: clientName,
-            jobType: selectedType
-        });
+function confirmJob(button) {
+    const row = button.closest('tr'); // Get the row from the jobs list
+    const clientName = row.cells[0].textContent; // Get the client name from the jobs list
+    const selectedTrailerType = row.cells[2].querySelector('select').value; // Get the selected trailer type from the jobs list
 
-        // Disable the confirm button and dropdown to prevent re-confirmation
-        button.disabled = true;
-        row.cells[2].querySelector('select').disabled = true;
+    // Add the confirmed job to the confirmedJobs array
+    confirmedJobs.push({
+        jobName: clientName,
+        trailerType: selectedTrailerType
+    });
 
-        // Refresh the dropdowns for the next row
-        populateDropDowns(currentRow);
-    }
+    // Get the current row in the roster table
+    const tableBody = document.getElementById('rosterTableBody');
+    const currentTableRow = tableBody.querySelector(`tr:nth-child(${currentRow})`); // Get the current row by its position in the table
 
-    // Function to populate dropdowns from driver, vehicles, and jobs tabs
-    function populateDropDowns(rowId) {
-        const drivers = document.querySelectorAll('#driversTable tbody tr');
-        const vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
-        const driverSelect = document.getElementById(`driver${rowId}`);
-        const regoSelect = document.getElementById(`rego${rowId}`);
-        const serviceSelect = document.getElementById(`service${rowId}`);
-        const typeSelect = document.getElementById(`type${rowId}`);
+    // Update the Client Name (Service column) and Trailer Type in the current row
+    const clientCell = currentTableRow.querySelector(`#service${currentRow}`); // Service (Client Name) column
+    const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`); // Trailer Type column
 
-        driverSelect.innerHTML = '';
-        regoSelect.innerHTML = '';
-        serviceSelect.innerHTML = '';
-        typeSelect.innerHTML = '';
+    // Update the Client Name (Service) and Trailer Type in the main roster table
+    clientCell.innerHTML = `<option>${clientName}</option>`; // Set the client name (service)
+    trailerTypeSelect.innerHTML = ''; // Clear previous options in Trailer Type
+    const trailerTypeOption = document.createElement('option');
+    trailerTypeOption.value = selectedTrailerType;
+    trailerTypeOption.textContent = selectedTrailerType;
+    trailerTypeSelect.appendChild(trailerTypeOption); // Add the selected trailer type
 
-        // Populate vehicles dropdown
-        vehicles.forEach(function (row) {
+    // Disable the confirm button and dropdown in the jobs list to prevent re-confirmation
+    button.disabled = true;
+    row.cells[2].querySelector('select').disabled = true;
+
+    // You can add new rows or other operations as needed here
+}
+
+
+
+function populateDropDowns(rowId) {
+    const drivers = document.querySelectorAll('#driversTable tbody tr');
+    const vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
+    const driverSelect = document.getElementById(`driver${rowId}`);
+    const regoSelect = document.getElementById(`rego${rowId}`);
+    const serviceSelect = document.getElementById(`service${rowId}`); // Service (Client Name)
+    const trailerTypeSelect = document.getElementById(`type${rowId}`); // Trailer Type
+
+    driverSelect.innerHTML = '';
+    regoSelect.innerHTML = '';
+    serviceSelect.innerHTML = '';
+    trailerTypeSelect.innerHTML = '';
+
+    // Populate vehicles dropdown
+    vehicles.forEach(function (row) {
+        const option = document.createElement('option');
+        option.value = row.cells[0].textContent;
+        option.textContent = row.cells[0].textContent;
+        regoSelect.appendChild(option);
+    });
+
+    // Populate drivers dropdown
+    drivers.forEach(function (row) {
+        const driverName = row.cells[0].textContent;
+        const onLeave = row.cells[1].querySelector('.onLeave').checked;
+
+        if (!onLeave) {
             const option = document.createElement('option');
-            option.value = row.cells[0].textContent;
-            option.textContent = row.cells[0].textContent;
-            regoSelect.appendChild(option);
-        });
-
-        // Populate drivers dropdown, filter by "On Leave"
-        drivers.forEach(function (row) {
-            const driverName = row.cells[0].textContent;
-            const onLeave = row.cells[1].querySelector('.onLeave').checked;
-            const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
-
-            if (!onLeave) {
-                const option = document.createElement('option');
-                option.value = driverName;
-                option.textContent = driverName;
-                driverSelect.appendChild(option);
-
-                // Filter services based on MSIC for wharf jobs
-                serviceSelect.innerHTML = '';
-                confirmedJobs.forEach(function (job) {
-                    const isWharf = job.jobName === "Wharf";
-                    if (!hasMSIC && isWharf) return; // Skip wharf jobs for non-MSIC drivers
-
-                    const serviceOption = document.createElement('option');
-                    serviceOption.value = job.jobName;
-                    serviceOption.textContent = job.jobName;
-                    serviceSelect.appendChild(serviceOption);
-
-                    const typeOption = document.createElement('option');
-                    typeOption.value = job.jobType;
-                    typeOption.textContent = job.jobType;
-                    typeSelect.appendChild(typeOption);
-                });
-            }
-        });
-    }
-
-    // Function to confirm a row and dynamically add the next one
-    function confirmRow(rowId) {
-        const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
-        currentRowElement.classList.add('confirmed-row');
-        currentRowElement.querySelector('.confirm-btn').disabled = true;
-
-        confirmedRowsCount++;
-        currentRow++;
-        
-        if (confirmedRowsCount < 1000) {
-            addRow(); // Add the next row dynamically
+            option.value = driverName;
+            option.textContent = driverName;
+            driverSelect.appendChild(option);
         }
+    });
+}
+
+
+
+
+function confirmRow(rowId) {
+    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    currentRowElement.classList.add('confirmed-row');
+    currentRowElement.querySelector('.confirm-btn').disabled = true;
+
+    confirmedRowsCount++;
+    
+    if (confirmedRowsCount < 1000) {
+        currentRow++;  // Move to the next row
+        addRow();  // Add the next row dynamically
     }
+}
+
 
     // Function to add a new driver dynamically
     function addDriver() {
