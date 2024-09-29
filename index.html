@@ -20,10 +20,16 @@
         h1 {
             margin: 0;
         }
-        .logo {
-         width: 300px; /* Increase the width to make the logo bigger */
-         height: auto; /* Maintain aspect ratio */
+        .edit-btn {
+             background-color: #ff9900; /* Different color for edit mode */
+                color: white;
+            }
+
+        .confirm-btn {
+            background-color: #007bff; /* Confirm button style */
+            color: white;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -74,6 +80,10 @@
         .confirmed-row {
             background-color: #f0f0f0;
             pointer-events: none;
+        }
+        .logo {
+         width: 300px; /* Increase the width to make the logo bigger */
+         height: auto; /* Maintain aspect ratio */
         }
     </style>
 </head>
@@ -249,7 +259,35 @@
         });
         document.getElementById("currentDate").innerText = melbourneTime;
     }
-    function addRow() {
+   
+    function deleteRow(rowId) {
+    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    currentRowElement.remove(); // Remove the selected row from the table
+
+    // Optionally, call reassignRowIds() here if you want to renumber rows after deletion
+    reassignRowIds();  // Reassign row IDs and element IDs after deletion (optional)
+}
+
+function reassignRowIds() {
+    const rows = document.querySelectorAll('#rosterTableBody tr');
+    rows.forEach((row, index) => {
+        const newId = index + 1; // Create new rowId based on index
+        row.id = `row-${newId}`; // Update the row's ID
+        // Update the IDs of all elements within the row
+        row.querySelector('input[type="text"]').id = `gek${newId}`;
+        row.querySelector('select[id^="rego"]').id = `rego${newId}`;
+        row.querySelector('select[id^="type"]').id = `type${newId}`;
+        row.querySelector('input[type="time"]').id = `startTime${newId}`;
+        row.querySelector('input[type="time"]').id = `finishTime${newId}`;
+        row.querySelector('select[id^="service"]').id = `service${newId}`;
+        row.querySelector('select[id^="wharfLocation"]').id = `wharfLocation${newId}`;
+        row.querySelector('select[id^="constructionSite"]').id = `constructionSite${newId}`;
+        row.querySelector('select[id^="driver"]').id = `driver${newId}`;
+        row.querySelector('.confirm-btn').setAttribute('onclick', `confirmRow(${newId})`);
+        row.querySelector('.delete-btn').setAttribute('onclick', `deleteRow(${newId})`);
+    });
+}
+function addRow() {
     const tableBody = document.getElementById('rosterTableBody');
     const rowId = currentRow; // Use the current row for unique IDs
 
@@ -277,13 +315,14 @@
             </select>
         </td>
         <td><select id="driver${rowId}"></select></td>
-        <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
+        <td>
+            <button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button>
+            <button class="delete-btn" onclick="deleteRow(${rowId})">Delete</button>
+        </td>
     `;
     tableBody.appendChild(row);
     populateDropDowns(rowId);  // Populate dropdowns for this new row
 }
-
-
 
 function updateDriverList(rowId) {
     const wharfStatus = document.getElementById(`wharfLocation${rowId}`).value;
@@ -441,29 +480,35 @@ function populateDropDowns(rowId) {
     });
 }
 
-
 function confirmRow(rowId) {
     const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
-    currentRowElement.classList.add('confirmed-row');
-    currentRowElement.querySelector('.confirm-btn').disabled = true;
+    const confirmButton = currentRowElement.querySelector('.confirm-btn');
 
-    confirmedRowsCount++;
-    
-    if (confirmedRowsCount < 1000) {
-        currentRow++;  // Move to the next row
-        addRow();  // Add the next row dynamically
+    // Toggle between Confirm and Edit
+    if (confirmButton.textContent === "Confirm") {
+        // Disable all inputs and dropdowns
+        currentRowElement.querySelectorAll('input, select').forEach(function(element) {
+            element.disabled = true;
+        });
+
+        // Change button to Edit
+        confirmButton.textContent = "Edit";
+        confirmButton.classList.add('edit-btn');
+
+        // Add a new row after confirmation
+        currentRow++;  // Increment row counter
+        addRow();  // Add a new row
+    } else {
+        // Enable all inputs and dropdowns to make row editable again
+        currentRowElement.querySelectorAll('input, select').forEach(function(element) {
+            element.disabled = false;
+        });
+
+        // Change button back to Confirm
+        confirmButton.textContent = "Confirm";
+        confirmButton.classList.remove('edit-btn');
     }
 }
-function refreshDriverDropdowns() {
-    const rows = document.querySelectorAll('#rosterTableBody tr');
-    
-    rows.forEach((row, index) => {
-        const rowId = index + 1; // Get the row index
-        updateDriverList(rowId); // Update the driver dropdown for each row
-    });
-}
-
-
 
     // Function to add a new driver dynamically
     function addDriver() {
