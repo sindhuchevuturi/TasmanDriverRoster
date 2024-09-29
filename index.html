@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Driver Roster with Dynamic Inputs and Excel Download</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script> <!-- SheetJS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -81,7 +84,10 @@
     <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
 </header>
 
+
 <button class="download-btn" onclick="downloadExcel()">Download</button>
+
+
 <!-- Main Roster Table -->
 <table id="rosterTable">
     <thead>
@@ -93,6 +99,7 @@
             <th>Finish Time</th>
             <th>Service</th>
             <th>Wharf Status</th> <!-- Moved Wharf Status next to Service -->
+            <th>Construction Site</th>
             <th>Driver</th>
             <th>Confirm</th>
         </tr>
@@ -117,15 +124,17 @@
     <tbody>
         <tr>
             <td>(HC) Dean Piggot</td>
-            <td><input type="checkbox" class="onLeave" onchange="populateDropDowns(currentRow)"></td>
-            <td><input type="checkbox" class="hasMSIC" checked onchange="populateDropDowns(currentRow)"></td>
-            <td><input type="checkbox" class="hasWhiteCard"></td>
+            <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
         </tr>
         <tr>
             <td>(MC) Jagdip Singh</td>
-            <td><input type="checkbox" class="onLeave" onchange="populateDropDowns(currentRow)"></td>
-            <td><input type="checkbox" class="hasMSIC" checked onchange="populateDropDowns(currentRow)"></td>
-            <td><input type="checkbox" class="hasWhiteCard"></td>
+            <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
         </tr>
         <!-- Add more drivers -->
     </tbody>
@@ -245,7 +254,7 @@
 
     const row = document.createElement('tr');
     row.innerHTML = `
-        <td>3072${rowId}</td>
+        <td><input type="text" id="gek${rowId}" placeholder="Enter GEK#"></td>
         <td><select id="rego${rowId}"></select></td>
         <td>
             <select id="type${rowId}"></select> <!-- This is the Trailer Type dropdown -->
@@ -260,6 +269,12 @@
                 <option value="Yes">Yes</option> <!-- Wharf Status -->
             </select>
         </td>
+        <td>
+            <select id="constructionSite${rowId}" onchange="updateDriverList(${rowId})">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option> <!-- Construction Site -->
+            </select>
+        </td>
         <td><select id="driver${rowId}"></select></td>
         <td><button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button></td>
     `;
@@ -268,23 +283,41 @@
 }
 
 
+
 function updateDriverList(rowId) {
     const wharfStatus = document.getElementById(`wharfLocation${rowId}`).value;
-    
-    if (wharfStatus === "Yes") {
-        // If Wharf Status is Yes, show only drivers with MSIC and who are not on leave
-        populateDriverDropdown(rowId, true);
-    } else {
-        // If Wharf Status is No, show all drivers who are not on leave
-        populateDriverDropdown(rowId, false);
-    }
+    const constructionSiteStatus = document.getElementById(`constructionSite${rowId}`).value;
+
+    // Update driver list based on the statuses
+    populateDriverDropdown(rowId, wharfStatus === "Yes", constructionSiteStatus === "Yes");
 }
+
+// Ensure the dropdowns trigger driver list updates
+document.querySelectorAll('.onLeave, .hasMSIC, .hasWhiteCard').forEach(function(element) {
+    element.addEventListener('change', function() {
+        refreshDriverDropdowns();
+    });
+});
+
+
 
 
 function confirmJob(button) {
     const row = button.closest('tr'); // Get the row from the jobs list
     const clientName = row.cells[0].textContent; // Get the client name
     const selectedTrailerType = row.cells[1].querySelector('select').value; // Get the trailer type
+
+    const requiresWhiteCard = clientName.toLowerCase().includes("construction"); // Example logic, adjust as needed
+    if (requiresWhiteCard) {
+        // Ensure driver has White Card for construction site jobs
+        const driverSelect = document.getElementById(`driver${currentRow}`);
+        const hasWhiteCard = driverSelect.options[driverSelect.selectedIndex].dataset.hasWhiteCard === 'true';
+
+        if (!hasWhiteCard) {
+            alert("Selected driver does not have a White Card. Please choose a qualified driver.");
+            return; // Prevent confirmation
+        }
+    }
 
     // Get the current row in the roster table
     const currentTableRow = document.querySelector(`#rosterTableBody tr:nth-child(${currentRow})`);
@@ -305,7 +338,7 @@ function confirmJob(button) {
     button.disabled = true;
     row.cells[1].querySelector('select').disabled = true;
 }
-function populateDriverDropdown(rowId, wharfStatusIsYes) {
+function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) {
     const drivers = document.querySelectorAll('#driversTable tbody tr'); // Get all drivers from the drivers table
     const driverSelect = document.getElementById(`driver${rowId}`); // Driver dropdown in the roster table
     driverSelect.innerHTML = ''; // Clear current options
@@ -315,18 +348,36 @@ function populateDriverDropdown(rowId, wharfStatusIsYes) {
         const driverName = row.cells[0].textContent; // Driver name
         const onLeave = row.cells[1].querySelector('.onLeave').checked; // Is the driver on leave?
         const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked; // Does the driver have MSIC?
+        const hasWhiteCard = row.cells[3].querySelector('.hasWhiteCard').checked; // Does the driver have a White Card?
 
+        // Ensure the driver is not on leave
         if (!onLeave) {
-            if (wharfStatusIsYes) {
-                // Show only drivers with MSIC if Wharf Status is Yes
+            if (wharfStatusIsYes && constructionSiteIsYes) {
+                // Both Wharf Status and Construction Site are Yes: Driver must have both MSIC and White Card
+                if (hasMSIC && hasWhiteCard) {
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
+            } else if (wharfStatusIsYes) {
+                // Only Wharf Status is Yes: Driver must have MSIC
                 if (hasMSIC) {
                     const option = document.createElement('option');
                     option.value = driverName;
                     option.textContent = driverName;
                     driverSelect.appendChild(option);
                 }
+            } else if (constructionSiteIsYes) {
+                // Only Construction Site is Yes: Driver must have White Card
+                if (hasWhiteCard) {
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
             } else {
-                // Show all drivers who are not on leave if Wharf Status is No
+                // Neither Wharf Status nor Construction Site is Yes: Show all drivers who are not on leave
                 const option = document.createElement('option');
                 option.value = driverName;
                 option.textContent = driverName;
@@ -335,15 +386,14 @@ function populateDriverDropdown(rowId, wharfStatusIsYes) {
         }
     });
 
-    // If Wharf Status is Yes and no drivers are available with MSIC, show a message
-    if (wharfStatusIsYes && driverSelect.length === 0) {
+    // If no drivers are available, show a message
+    if (driverSelect.length === 0) {
         const noDriverOption = document.createElement('option');
         noDriverOption.value = '';
-        noDriverOption.textContent = 'No drivers with MSIC available';
+        noDriverOption.textContent = 'No drivers available';
         driverSelect.appendChild(noDriverOption);
     }
 }
-
 
 function populateDropDowns(rowId) {
     const drivers = document.querySelectorAll('#driversTable tbody tr');
@@ -391,9 +441,6 @@ function populateDropDowns(rowId) {
 }
 
 
-
-
-
 function confirmRow(rowId) {
     const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
     currentRowElement.classList.add('confirmed-row');
@@ -406,6 +453,15 @@ function confirmRow(rowId) {
         addRow();  // Add the next row dynamically
     }
 }
+function refreshDriverDropdowns() {
+    const rows = document.querySelectorAll('#rosterTableBody tr');
+    
+    rows.forEach((row, index) => {
+        const rowId = index + 1; // Get the row index
+        updateDriverList(rowId); // Update the driver dropdown for each row
+    });
+}
+
 
 
     // Function to add a new driver dynamically
@@ -417,9 +473,10 @@ function confirmRow(rowId) {
 
             newRow.innerHTML = `
                 <td>${newDriverName}</td>
-                <td><input type="checkbox" class="onLeave" onchange="populateDropDowns(currentRow)"></td>
-                <td><input type="checkbox" class="hasMSIC" onchange="populateDropDowns(currentRow)"></td>
-                <td><input type="checkbox" class="hasWhiteCard"></td>
+                <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+                <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+                <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
             `;
 
             // Clear input and refresh dropdowns
