@@ -101,7 +101,7 @@
 
 <!-- Main Roster Table -->
 <table id="rosterTable">
-    <h2>Roster Table</h2>
+    <h2> Roster Table</h2>
     <thead>
         <tr>
             <th>GEK #</th>
@@ -238,6 +238,18 @@
             </td>
             <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
         </tr>
+
+        <td>NE Link</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
     </tbody>
 </table>
 
@@ -339,7 +351,14 @@ document.querySelectorAll('.onLeave, .hasMSIC, .hasWhiteCard').forEach(function(
         refreshDriverDropdowns();
     });
 });
-
+// Update the driver list for all rows whenever any of the checkbox statuses are changed
+function refreshDriverDropdowns() {
+    const rows = document.querySelectorAll('#rosterTableBody tr');  // Select all rows in the roster table
+    rows.forEach((row, index) => {
+        const rowId = index + 1;  // Get row ID
+        updateDriverList(rowId);  // Update driver list for each row
+    });
+}
 
 
 
