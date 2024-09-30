@@ -1,8 +1,5 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
+# GitHub Actions for deploying Node.js app to Azure Web App - DriverRoster
 name: Build and deploy Node.js app to Azure Web App - DriverRoster
-
 
 on:
   push:
@@ -57,6 +54,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'DriverRoster'  # Ensure this matches exactly with your Azure Web App name
+          app-name: 'DriverRoster'  # Ensure this matches the name of your Azure Web App
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
