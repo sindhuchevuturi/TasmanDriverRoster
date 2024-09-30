@@ -53,4 +53,4 @@ jobs:
           app-name: 'TasmanDriverRoster'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_62BAAC4FC9124AEC9EFDCD73F54A14E7 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4CF9BBC8A7DD4A69AE41185FF5B1239E }}
