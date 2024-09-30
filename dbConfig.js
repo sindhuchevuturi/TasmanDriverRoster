@@ -5,13 +5,13 @@ const sql = require('mssql');  // Use mssql for Azure SQL
 
 // Azure SQL Database Configuration
 const dbConfig = {
-    user: 'Sindhura.Chevuturi@taslog.com.au',  // Your Azure SQL username
-    password: 'EntreatyFloor7!',  // Your Azure SQL password
-    server: 'tasmanclouddata.database.windows.net',  // Azure SQL Server name
-    database: 'driver-roster-database',  // Your Azure SQL database name
+    user: process.env.AZURE_SQL_USER, 
+    password: process.env.AZURE_SQL_PASSWORD, 
+    server: process.env.AZURE_SQL_SERVER,  
+    database: 'driver-roster-database',
     options: {
-        encrypt: true,  // Azure requires encryption
-        trustServerCertificate: false,  // Disable self-signed cert validation
+        encrypt: true,  
+        trustServerCertificate: false,  
     }
 };
 
