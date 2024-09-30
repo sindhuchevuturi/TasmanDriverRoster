@@ -59,4 +59,4 @@ jobs:
           app-name: 'DriverRoster'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5DB3C81F5A864DA98AD6602CFB5ACF1A }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_04792DE7AD244D0EAEB504410005FF36 }}
